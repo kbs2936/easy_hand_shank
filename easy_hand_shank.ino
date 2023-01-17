@@ -230,7 +230,7 @@ void connectToWiFi() {
   LOGD("Connect wifi success: %s", WiFi.localIP().toString().c_str());
 
   //点击保存，连网成功后才保存mqtt配置，不是点击保存时就保存。且如果上电没有走UI配网流程直接连网了也不保存。
-  if (isSaveConfig) {
+  if (isSaveConfig && (strlen(custom_mqtt_server.getValue()) > 0)) {
     LOGD("Saving config");
     strlcpy(config.mqttServer, custom_mqtt_server.getValue(), sizeof(config.mqttServer));
 
@@ -332,9 +332,9 @@ void loop() {
   }
 
   if ((left == 0) && (right == 1)) {
-    buf[2] = -100;
-  } else if ((right == 0) && (left == 1)) {
     buf[2] = 100;
+  } else if ((right == 0) && (left == 1)) {
+    buf[2] = -100;
   }
 
   //舵机对应的 custom1 custom2 对应 buf[4] buf[5] 先不调试，先调前进后退和转弯
