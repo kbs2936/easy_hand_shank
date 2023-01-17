@@ -46,9 +46,6 @@ struct MqttConfig config = {
   "z2m"
 };
 
-//用于保存数据的标志
-bool isSaveConfig = false;
-
 //---------------------------------------------------------------------------------------------------------------------
 /**
  * @description: 从文件系统中读取mqtt的配置参数
@@ -88,14 +85,6 @@ void getMqttConfig() {
   READ_STR_CONFIG_FROM_JSON(mqttServer);
   serializeJson(doc, *DBGCOM);
   SPIFFS.end();
-}
-
-/**
- * @description: Web设置wifi界面点击保存的回调函数
- */
-void saveConfigCallback() {
-  LOGD("Should save config");
-  isSaveConfig = true;
 }
 
 
@@ -201,7 +190,7 @@ void connectToWiFi() {
   //从文件系统中读取mqtt的配置参数，以便带到web配网界面中显示
   getMqttConfig();
   WiFiManagerParameter custom_mqtt_server("server", "手柄热点名称", config.mqttServer, sizeof(config.mqttServer));
-  wifiManager.setSaveConfigCallback(saveConfigCallback);
+  //wifiManager.setSaveConfigCallback(saveConfigCallback); //联网成功之后才会调这个回调，所以没用，直接下面联网成功判断即可
   wifiManager.addParameter(&custom_mqtt_server);
 
   String apName;
@@ -229,8 +218,8 @@ void connectToWiFi() {
   ledShowColor(LedColorGreen);
   LOGD("Connect wifi success: %s", WiFi.localIP().toString().c_str());
 
-  //点击保存，连网成功后才保存mqtt配置，不是点击保存时就保存。且如果上电没有走UI配网流程直接连网了也不保存。
-  if (isSaveConfig && (strlen(custom_mqtt_server.getValue()) > 0)) {
+  //输入框有值 + 值有改变，才保存，无值也保存没问题，只是会把原来的值赋成空字符串
+  if ((strlen(custom_mqtt_server.getValue()) > 0) && (strcmp(custom_mqtt_server.getValue(), config.mqttServer) != 0)) {
     LOGD("Saving config");
     strlcpy(config.mqttServer, custom_mqtt_server.getValue(), sizeof(config.mqttServer));
 
@@ -305,17 +294,14 @@ void setup() {
  * @description: loop
  */
 void loop() {
-  /*
-  TODO1:按键消抖 
-  https://getiot.tech/arduino/arduino-button-debounce.html
-
-  这里有 udp 的测试工具，或者先打日志调试，然后直接上小车
-  http://www.taichi-maker.com/homepage/iot-development/iot-dev-reference/esp8266-c-plus-plus-reference/wifiudp/esp8266-udp-led/
-  */
 
   if (!checkNetwork()) {
     return;
   }
+
+  //测试中有发现，重新配网连接成功后第1次loop有概率走下面那个长按的分支，所以加个计数器规避此种情况
+  static unsigned long loopCnt = 0;
+  loopCnt++;
 
   //读取6个按键状态，默认高电平，按下低电平
   unsigned char buf[20] = { 0 };
@@ -354,7 +340,8 @@ void loop() {
   unsigned long c1Duration = CUSTOM1.duration();
   bool c2Value = CUSTOM2.read();
   unsigned long c2Duration = CUSTOM2.duration();
-  if (!c1Value && !c2Value && (c1Duration >= 3000) && (c2Duration >= 3000)) {
+  if (!c1Value && !c2Value && (c1Duration >= 3000) && (c2Duration >= 3000) && (loopCnt > 5)) {
+    LOGD("--- Long Press to Erase Settings loopCnt = %ld ---", loopCnt);
     wifiManager.resetSettings();
     delay(50);
     resetESP8266();
