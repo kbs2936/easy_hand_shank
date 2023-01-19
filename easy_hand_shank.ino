@@ -189,7 +189,7 @@ void connectToWiFi() {
 
   //从文件系统中读取mqtt的配置参数，以便带到web配网界面中显示
   getMqttConfig();
-  WiFiManagerParameter custom_mqtt_server("server", "手柄热点名称", config.mqttServer, sizeof(config.mqttServer));
+  WiFiManagerParameter custom_mqtt_server("server", "手柄热点名称（选填）", config.mqttServer, sizeof(config.mqttServer));
   //wifiManager.setSaveConfigCallback(saveConfigCallback); //联网成功之后才会调这个回调，所以没用，直接下面联网成功判断即可
   wifiManager.addParameter(&custom_mqtt_server);
 
