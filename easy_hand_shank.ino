@@ -24,7 +24,7 @@ bool isWiFiConnected = false;
 Adafruit_NeoPixel WS2812B(1, PIN_2812, NEO_GRB + NEO_KHZ800);
 
 unsigned char c1Old = 120;
-unsigned char c2Old = 10;
+unsigned char c2Old = 10;  //左右夹紧舵机归0阶段发10度认为加紧，装上夹子后发0认为夹紧，预留10度给装配冗余
 
 Bounce2::Button CUSTOM1 = Bounce2::Button();
 Bounce2::Button CUSTOM2 = Bounce2::Button();
@@ -330,7 +330,7 @@ void loop() {
     c1Old = (c1Old == 120) ? 0 : 120;
   }
   if (CUSTOM2.pressed()) {
-    c2Old = (c2Old == 70) ? 10 : 70;
+    c2Old = (c2Old == 80) ? 0 : 80;
   }
   buf[4] = c1Old;
   buf[5] = c2Old;
